@@ -1,0 +1,16 @@
+[Unit]
+Description=Eclipse Photography Helper
+Wants=gpsd.service ntpsec.service
+
+[Service]
+Type=exec
+EnvironmentFile=/etc/default/eclipse
+# this service can start before the PWM device has started
+ExecStartPre=+/bin/bash -c 'until [ -e /sys/class/pwm/pwmchip0/export ]; do sleep 1; done; echo 0 > /sys/class/pwm/pwmchip0/export'
+ExecStart=+/home/jeffj/src/eclipse2024/bin/linux-armv6l-dbg/eclipse --st7920 --zone ${ZONE} --conf ${CONF} --shape ${SHAPE} $OPTIONS
+Restart=on-failure
+RestartSec=4
+TimeoutStopSec=4
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,7 @@
+# copy this file to /etc/default/eclipse
+ZONE="/usr/share/zoneinfo/right/UTC"
+#OPTIONS="--lon=-93.2586701 --lat=35.2170883"
+# adjust everything below based on installed directory
+CONF="/home/jeffj/src/eclipse2024/pins.conf"
+SHAPE="/home/jeffj/src/umbra_hi.shp"
+LD_LIBRARY_PATH=/home/jeffj/src/duds/bin/linux-armv6l-dbg/lib/
