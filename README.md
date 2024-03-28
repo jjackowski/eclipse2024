@@ -14,12 +14,11 @@ The code here was written in a bit of a rush, so it isn't my best. It uses code 
 
 The program currently lacks a few things:
  - The start and end of the eclipse is computed as constant time offsets from totality based on where I expect to view the eclipse.
- - The sun possition is not computed or reported.
 
 # Current Bugs and Issues
 
 Testing is ongoing.
- - Buzzer output isn't working. Could be a hardware issue.
+ - The buzzer makes more beeps than intended. The beeps before the event are correct, but it keeps beeping for a while longer.
  - The schedule page builds a list of events and schedules alarms when it is visited, but it would be better if it occured on demand. This likely won't be a problem during the eclipse, but it does mean that the page should be visited after setting a time offset for testing.
  - After setting the time offset, the offset must be set to zero before changing it to something else, or the offset will be incorrect.
 
