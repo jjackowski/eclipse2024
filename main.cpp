@@ -554,7 +554,7 @@ try {
 				brightness = brightness * 0.8 +
 					0.2 * (double)brightmon->brightnessCount();
 				// plenty bright?
-				if (brightness > 12000.0) {
+				if (brightness > 11000.0) {
 					// no need of backlight
 					pwmout->disable();
 				}
