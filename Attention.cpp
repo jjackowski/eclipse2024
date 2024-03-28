@@ -24,7 +24,8 @@ time(t), priority(pri), page(p), sound(aud) { }
 Attention::Attention(
 	const duds::hardware::devices::clocks::LinuxClockSptr &lcs,
 	const duds::hardware::interface::DigitalPin &buz
-) : clock(lcs), buzzer(buz) {
+) : clock(lcs) {
+	setBuzzer(buz);
 	running = std::thread(&Attention::run, this);
 }
 
@@ -49,7 +50,16 @@ Attention::~Attention() {
 }
 
 void Attention::setBuzzer(const duds::hardware::interface::DigitalPin &buz) {
-	buzzer = buz;
+	try {
+		duds::hardware::interface::DigitalPinAccess acc;
+		buz.access(&acc);
+		acc.modifyConfig(acc.capabilities().firstOutputDriveConfigFlags());
+		acc.output(false);
+		buzzer = buz;
+	} catch (...) {
+		std::cerr << "Attention::setBuzzer() could not configure buzzer output:\n"
+		<< boost::current_exception_diagnostic_information() << std::endl;
+	}
 }
 
 // in milliseconds
