@@ -36,7 +36,7 @@ double haversineEarth(const Location &l0, const Location &l1) {
 // Why does phi have two distinctly different lower-case forms, and more
 // importantly, why do websites that use phi insist on using both lower-case
 // forms on the same page?
-void sunPosition(
+void sunPosition_old(
 	double &azimuth,
 	double &elevation,
 	const Location &loc,
@@ -47,8 +47,9 @@ void sunPosition(
 	// based on https://www.esrl.noaa.gov/gmd/grad/solcalc/solareqns.PDF
 	// start of 2017 is at 1483228827s after T0
 	// 2017 has no leap seconds or days
+	// 1704153627 for start of 2024
 	double y = 2.0 * M_PI * (
-		(double)(time.time_since_epoch().count() - 1483228827 - ls) /
+		(double)(time.time_since_epoch().count() - 1704153627 - ls) /
 		(double)(60 * 60 * 24 * 365) // one year
 	);
 	double eqtime = 229.18 * (0.000075 + 0.001868 * std::cos(y) -
@@ -77,10 +78,74 @@ void sunPosition(
 	double zenith = std::acos(coszen);
 	elevation = ((M_PI / 2.0) - zenith) * 180.0 / M_PI;
 	// above results *seem* ok, but next is bad
-	azimuth = -(std::acos(
+	azimuth = (M_PI - std::acos(
 		-(std::sin(latrad) * coszen - std::sin(decl)) /
 		(std::cos(latrad) * std::sin(zenith))
-	) - M_PI) * 180.0 / M_PI;
+	)) * 180.0 / M_PI;
+}
+
+double radians(double d) {
+	return d * M_PI / 180.0;
+}
+
+double degrees(double r) {
+	return r * 180.0 / M_PI;
+}
+
+void sunPosition(
+	double &azimuth,
+	double &elevation,
+	const Location &loc,
+	const duds::time::interstellar::SecondTime &time
+) {
+	boost::gregorian::date date = duds::time::planetary::earth->date(time);
+	// start of day time
+	duds::time::interstellar::SecondTime dayStartTime;
+	duds::time::planetary::earth->date(dayStartTime, date);
+	// converted from a NOAA spreadsheet, including many conversions between
+	// radians and degrees to avoid introducing errors
+	// Time of current day as a fraction of how much of the day has past.
+	double e2 = (double)(time - dayStartTime).count() / (60.0 * 60.0 * 24.0);
+	// The spreadsheet handles dates like a day number. This is the number used
+	// for the start of 1970, which is what this code uses for time zero.
+	//const double dateT0 = 25569.0;
+	// use above to compute the spreadsheet's version of the date
+	//double d2 =
+	// fractional Julian day
+	double f2 = (double)date.day_number() - 0.5 + e2;
+	double g2 = (f2 - 2451545.0) / 36525.0;
+	double i2 = std::fmod(280.46646 + g2 * (36000.76983 + g2 * 0.0003032), 360.0);
+	double j2 = 357.52911 + g2 * (35999.05029 - 0.0001537 * g2);
+	double k2 = 0.016708634 - g2 * (0.000042037 + 0.0000001267 * g2);
+	double l2 = std::sin(radians(j2)) * (1.914602 - g2
+		* (0.004817 + 0.000014 * g2)) + std::sin(radians(2.0 * j2))
+		* (0.019993 - 0.000101 * g2) + std::sin(radians(3.0 * j2)) * 0.000289;
+	double m2 = i2 + l2;
+	double p2 = m2 - 0.00569 - 0.00478 * std::sin(radians(125.04 - 1934.136 * g2));
+	double q2 = 23.0 + (26.0 + ((21.448 - g2 * (46.815 + g2 *
+		(0.00059 - g2 * 0.001813)))) / 60.0) / 60.0;
+	double r2 = q2 + 0.00256 * std::cos(radians(125.04 - 1934.136 * g2));
+	double t2 = degrees(std::asin(std::sin(radians(r2)) * std::sin(radians(p2))));
+	double u2 = std::tan(radians(r2 / 2.0)) * std::tan(radians(r2 / 2.0));
+	double v2 = 4.0 * degrees(u2 * std::sin(2.0 * radians(i2)) - 2.0 * k2
+		* std::sin(radians(j2)) + 4.0 * k2 * u2 * std::sin(radians(j2))
+		* std::cos(2.0 * radians(i2)) - 0.5 * u2 * u2 * std::sin(4.0 * radians(i2))
+		- 1.25 * k2 * k2 * std::sin(2.0 * radians(j2)));
+	double ab2 = std::fmod(e2 * 1440.0 + v2 + 4.0 * loc.lon, 1440.0);
+	double ac2 = ((ab2 / 4.0) < 0) ? (ab2 / 4.0 + 180.0) : (ab2 / 4.0 - 180.0);
+	double ad2 = degrees(std::acos(std::sin(radians(loc.lat))
+		* std::sin(radians(t2)) + std::cos(radians(loc.lat))
+		* std::cos(radians(t2)) * std::cos(radians(ac2))));
+	elevation = 90.0 - ad2;
+	if (ac2 > 0) {
+		azimuth = std::fmod(degrees(std::acos(((std::sin(radians(loc.lat))
+			* cos(radians(ad2))) - sin(radians(t2))) / (cos(radians(loc.lat))
+			* sin(radians(ad2))))) + 180.0, 360.0);
+	} else {
+		azimuth = std::fmod(540.0 - degrees(acos(((sin(radians(loc.lat))
+			* cos(radians(ad2))) - sin(radians(t2))) / (cos(radians(loc.lat))
+			* sin(radians(ad2))))), 360.0);
+	}
 }
 
 void Hms::set(int seconds) {
