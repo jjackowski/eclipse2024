@@ -15,6 +15,7 @@
 #include "SchedulePage.hpp"
 #include "NetworkPage.hpp"
 #include "MenuPage.hpp"
+#include "SunPages.hpp"
 #include <filesystem>
 
 extern std::atomic_bool quit;
@@ -45,6 +46,8 @@ screen(iconArc, disp->dimensions()), displaystuff(dstuff), attn(lcptr, buz)
 		FontPool.getStringCache("Text"),
 		attn
 	);
+	pages[SunAz] = std::make_unique<SunAzPage>(lcptr);
+	pages[SunEl] = std::make_unique<SunElPage>(lcptr);
 	pages[System] = std::make_unique<SystemPage>();
 	pages[Network] = std::make_unique<NetworkPage>();
 	pages[Sensors] = std::make_unique<SensorPage>();
@@ -359,8 +362,8 @@ try {
 	// UI loop
 	do {
 		clock->sampleTime(time);
-		// advance time by 32ms
-		time.value += duds::time::interstellar::Milliseconds(32);
+		// advance time by 64ms (the display is slow)
+		time.value += duds::time::interstellar::Milliseconds(64);
 		displaystuff.setTime(
 			duds::time::planetary::earth->posix(
 				time.value
@@ -390,11 +393,11 @@ try {
 		}
 		// update the displayed page
 		pages[page]->update(dinfo, &screen);
-		// show the time 32ms in the future; it'll take a while to update the
+		// show the time 64ms in the future; it'll take a while to update the
 		// display
 		screen.render(frame, time);
 		disp->write(&frame);
-		// wait on input until 30ms before the next second
+		// wait on input until 60ms before the next second
 		if (
 			poller.wait(
 				std::max(
@@ -404,7 +407,7 @@ try {
 						duds::time::interstellar::MilliClock::now().time_since_epoch() %
 						duds::time::interstellar::Milliseconds(1000)
 					)
-					- duds::time::interstellar::Milliseconds(30),
+					- duds::time::interstellar::Milliseconds(60),
 					// minimum delay; ensure not <= 0
 					duds::time::interstellar::Milliseconds(1)
 				)

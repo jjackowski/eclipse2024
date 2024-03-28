@@ -34,8 +34,8 @@ Page::SelectionResponse SchedulePage::select(
 	const DisplayInfo &di,
 	SelectionCause sc
 ) {
-	if ((sc == SelectUser) || (
-		!menu->empty() &&
+	if (di.inTotality && (
+		(sc == SelectUser) ||
 		(di.now < (di.end + DisplayInfo::afterTotality + 180))
 	)) {
 		return SelectPage;

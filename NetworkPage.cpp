@@ -71,6 +71,8 @@ Page::SelectionResponse NetworkPage::select(
 			!netifs.empty() &&
 			// don't auto-show once the eclipse starts
 			(di.goodfix && (di.now < (di.start - DisplayInfo::beforeTotality)))
+			// auto-show without a good fix
+			|| !di.goodfix
 		)
 	) {
 		return SelectPage;

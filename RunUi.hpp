@@ -63,13 +63,12 @@ public:
 		Sun_Azimuth,
 		Sun_Now,
 		Schedule,
+		SunAz,
+		SunEl,
 		System,
 		Sensors,
 		Network,
 		Menu,
-		//Error,
-		//Notice,
-		//InTotality,
 		PageCycle         // if here, cycle to first page
 	};
 private:

@@ -29,6 +29,7 @@ void ClockPage::show(const DisplayInfo &di, Screen *scr) {
 
 void ClockPage::hide(const DisplayInfo &di, Screen *scr) { }
 
+
 Page::SelectionResponse GpsPage::select(const DisplayInfo &, SelectionCause) {
 	return SelectPage;
 }
@@ -72,14 +73,19 @@ void GpsPage::hide(const DisplayInfo &di, Screen *scr) {
 	scr->hideText();
 }
 
+
 Page::SelectionResponse EclipsePage::select(
 	const DisplayInfo &di,
 	SelectionCause sc
 ) {
 	if ((sc == SelectUser) || (
-		di.goodfix &&
-		(di.now < (di.end + DisplayInfo::afterTotality)) &&
-		(di.start < 86400)
+		// auto-select only with position fix
+		di.goodfix && (
+			// show if out of totality, or . . .
+			!di.inTotality ||
+			// . . . if the eclipse isn't over
+			(di.now < (di.end + DisplayInfo::afterTotality))
+		)
 	)) {
 		return SelectPage;
 	}
@@ -133,14 +139,12 @@ void EclipsePage::hide(const DisplayInfo &di, Screen *scr) {
 	scr->hideText();
 }
 
+
 Page::SelectionResponse TotalityPage::select(
 	const DisplayInfo &di,
 	SelectionCause sc
 ) {
-	if ((sc == SelectUser) || (
-		di.goodfix &&
-		(di.now < di.end) && (di.start < 86400)
-	)) {
+	if (di.inTotality && ((sc == SelectUser) || (di.now < (di.end)))) {
 		return SelectPage;
 	}
 	return SkipPage;
@@ -191,6 +195,7 @@ void TotalityPage::hide(const DisplayInfo &di, Screen *scr) {
 	scr->hideText();
 }
 
+
 SystemPage::SystemPage() : lavg("/proc/loadavg") { }
 
 Page::SelectionResponse SystemPage::select(const DisplayInfo &di, SelectionCause sc) {
@@ -198,8 +203,14 @@ Page::SelectionResponse SystemPage::select(const DisplayInfo &di, SelectionCause
 		// user wants it
 		(sc == SelectUser) ||
 		(
-			// don't auto-show once the eclipse starts
-			(di.goodfix && (di.now < (di.start - DisplayInfo::beforeTotality))) ||
+			(
+				di.goodfix &&
+				(  // don't auto-show during the eclipse
+					(di.now < (di.start - DisplayInfo::beforeTotality)) ||
+					(di.now > (di.end + DisplayInfo::afterTotality))
+				)
+			) ||
+			// show when no good GPS fix
 			!di.goodfix
 		)
 	) {
@@ -235,12 +246,13 @@ void SystemPage::update(const DisplayInfo &di, Screen *scr) {
 	scr->showText(oss.str(), 3, 1);
 	oss.str(std::string());
 	oss << std::setprecision(1) << di.powexpmovavg;
-	scr->showText(oss.str(), 3, 2);	
+	scr->showText(oss.str(), 3, 2);
 }
 
 void SystemPage::hide(const DisplayInfo &di, Screen *scr) {
 	scr->hideText();
 }
+
 
 Page::SelectionResponse SensorPage::select(
 	const DisplayInfo &di,
@@ -274,7 +286,7 @@ void SensorPage::update(const DisplayInfo &di, Screen *scr) {
 	if (di.uv > 0) {
 		scr->showText("UV", 0, 2);
 		oss << std::setprecision(1) << di.uvexpmovavg;
-		scr->showText(oss.str(), 1, 2);	
+		scr->showText(oss.str(), 1, 2);
 	}
 }
 
