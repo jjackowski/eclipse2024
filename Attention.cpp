@@ -50,15 +50,21 @@ Attention::~Attention() {
 }
 
 void Attention::setBuzzer(const duds::hardware::interface::DigitalPin &buz) {
-	try {
-		duds::hardware::interface::DigitalPinAccess acc;
-		buz.access(&acc);
-		acc.modifyConfig(acc.capabilities().firstOutputDriveConfigFlags());
-		acc.output(false);
-		buzzer = buz;
-	} catch (...) {
-		std::cerr << "Attention::setBuzzer() could not configure buzzer output:\n"
-		<< boost::current_exception_diagnostic_information() << std::endl;
+	/**
+	 * @bug  Without following check, the buz.access() call will crash if no
+	 *       pin; should throw.
+	 */
+	if (buz.havePin()) {
+		try {
+			duds::hardware::interface::DigitalPinAccess acc;
+			buz.access(&acc);
+			acc.modifyConfig(acc.capabilities().firstOutputDriveConfigFlags());
+			acc.output(false);
+			buzzer = buz;
+		} catch (...) {
+			std::cerr << "Attention::setBuzzer() could not configure buzzer output:\n"
+			<< boost::current_exception_diagnostic_information() << std::endl;
+		}
 	}
 }
 
@@ -96,7 +102,7 @@ try {
 			records.get<index_time>();
 		RecordContainer::index<index_time>::type::iterator iter = timeIdx.begin();
 		// it may be well in the past
-		while ((iter != timeIdx.end()) && (iter->time - time.total_seconds()) < -4) {
+		while ((iter != timeIdx.end()) && (iter->time - time.total_seconds()) < 0) {
 			iter = timeIdx.erase(iter);			
 		}
 		// that may have eliminated everything
